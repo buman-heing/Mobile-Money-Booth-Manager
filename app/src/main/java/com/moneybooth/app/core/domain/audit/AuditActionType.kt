@@ -1,0 +1,10 @@
+package com.moneybooth.app.core.domain.audit
+
+enum class AuditActionType {
+    CLASSIFICATION_CHANGE,
+    EMPLOYEE_ATTRIBUTION_CHANGE,
+    MANUAL_TRANSACTION_CREATED,
+    TRANSACTION_REJECTED,
+    RECONCILIATION_CLOSED,
+    RECONCILIATION_ADJUSTMENT,
+}
