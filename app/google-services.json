@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "379345509360",
+    "project_id": "moneybooth-f6555",
+    "storage_bucket": "moneybooth-f6555.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:379345509360:android:937ff6cc9ec71c5dfadb35",
+        "android_client_info": {
+          "package_name": "com.moneybooth.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASc5J2T2eN8AUj6WVrJxPD26PVlqb3EJ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

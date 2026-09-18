@@ -20,8 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moneybooth.app.core.data.AppContainer
 import com.moneybooth.app.core.domain.accounting.Money
 import com.moneybooth.app.ui.common.AppViewModelFactory
-import com.moneybooth.app.ui.theme.MoneyInGreen
-import com.moneybooth.app.ui.theme.MoneyOutRed
+import com.moneybooth.app.ui.theme.MoneyIn
+import com.moneybooth.app.ui.theme.MoneyOut
 
 @Composable
 fun ReconciliationSummaryScreen(shiftId: Long, container: AppContainer, onDone: () -> Unit) {
@@ -37,16 +37,16 @@ fun ReconciliationSummaryScreen(shiftId: Long, container: AppContainer, onDone: 
     }
 
     val differenceColor = when {
-        current.cashDifferenceMinor == 0L -> MoneyInGreen
-        else -> MoneyOutRed
+        current.cashDifferenceMinor == 0L -> MoneyIn
+        else -> MoneyOut
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Text("Shift reconciliation", style = MaterialTheme.typography.headlineMedium)
 
         SummaryCard("Opening cash", Money.formatWithCurrency(current.openingCashMinor))
-        SummaryCard("Cash in", "+ ${Money.formatWithCurrency(current.cashInMinor)}", MoneyInGreen)
-        SummaryCard("Cash out", "− ${Money.formatWithCurrency(current.cashOutMinor)}", MoneyOutRed)
+        SummaryCard("Cash in", "+ ${Money.formatWithCurrency(current.cashInMinor)}", MoneyIn)
+        SummaryCard("Cash out", "− ${Money.formatWithCurrency(current.cashOutMinor)}", MoneyOut)
         SummaryCard("Expected cash", Money.formatWithCurrency(current.expectedCashMinor))
         SummaryCard("Actual cash counted", Money.formatWithCurrency(current.actualCashMinor))
         SummaryCard("Difference", Money.formatWithCurrency(current.cashDifferenceMinor), differenceColor)

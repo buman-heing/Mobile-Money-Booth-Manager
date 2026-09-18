@@ -1,9 +1,11 @@
 package com.moneybooth.app.core.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.moneybooth.app.core.sync.newUid
 
 @Entity(
     tableName = "reconciliations",
@@ -15,10 +17,11 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("shiftId", unique = true), Index("boothId"), Index("employeeId")],
+    indices = [Index("uid", unique = true), Index("shiftId", unique = true), Index("boothId"), Index("employeeId")],
 )
 data class ReconciliationEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    @ColumnInfo(defaultValue = "") val uid: String = newUid(),
     val shiftId: Long,
     val boothId: Long,
     val employeeId: Long,

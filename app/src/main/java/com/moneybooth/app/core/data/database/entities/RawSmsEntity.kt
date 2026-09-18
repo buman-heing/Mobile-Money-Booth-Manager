@@ -1,8 +1,10 @@
 package com.moneybooth.app.core.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.moneybooth.app.core.sync.newUid
 import com.moneybooth.app.core.domain.transactions.ParsingStatus
 
 /**
@@ -12,10 +14,11 @@ import com.moneybooth.app.core.domain.transactions.ParsingStatus
  */
 @Entity(
     tableName = "raw_sms",
-    indices = [Index("fingerprint"), Index("parsingStatus")],
+    indices = [Index("uid", unique = true), Index("fingerprint"), Index("parsingStatus")],
 )
 data class RawSmsEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    @ColumnInfo(defaultValue = "") val uid: String = newUid(),
     val sender: String,
     val receivedTimestamp: Long,
     val rawBody: String,

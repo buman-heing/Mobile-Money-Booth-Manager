@@ -1,9 +1,11 @@
 package com.moneybooth.app.core.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.moneybooth.app.core.sync.newUid
 import com.moneybooth.app.core.domain.reconciliation.CashMovementDirection
 import com.moneybooth.app.core.domain.reconciliation.CashMovementReason
 
@@ -22,10 +24,11 @@ import com.moneybooth.app.core.domain.reconciliation.CashMovementReason
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("shiftId"), Index("boothId")],
+    indices = [Index("uid", unique = true), Index("shiftId"), Index("boothId")],
 )
 data class CashMovementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    @ColumnInfo(defaultValue = "") val uid: String = newUid(),
     val shiftId: Long,
     val boothId: Long,
     val direction: CashMovementDirection,

@@ -29,4 +29,7 @@ interface RawSmsDao {
 
     @Query("SELECT * FROM raw_sms ORDER BY receivedTimestamp DESC")
     fun observeAll(): Flow<List<RawSmsEntity>>
+
+    @Query("SELECT * FROM raw_sms WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): RawSmsEntity?
 }

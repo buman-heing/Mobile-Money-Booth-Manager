@@ -11,6 +11,8 @@ import com.moneybooth.app.core.domain.transactions.TransactionDirection
 import com.moneybooth.app.core.domain.transactions.TransactionSource
 import com.moneybooth.app.core.domain.transactions.TransactionStatus
 import com.moneybooth.app.core.domain.transactions.TransactionType
+import com.moneybooth.app.core.sync.SyncEntityType
+import com.moneybooth.app.core.sync.SyncOutbox
 import kotlinx.coroutines.flow.Flow
 
 data class InsertOutcome(val transactionId: Long, val wasDuplicate: Boolean)
@@ -18,6 +20,7 @@ data class InsertOutcome(val transactionId: Long, val wasDuplicate: Boolean)
 class TransactionRepository(
     private val transactionDao: TransactionDao,
     private val auditLogDao: AuditLogDao,
+    private val outbox: SyncOutbox,
 ) {
     fun observeById(id: Long): Flow<TransactionEntity?> = transactionDao.observeById(id)
 
@@ -48,6 +51,9 @@ class TransactionRepository(
     fun observeSumForDay(boothId: Long?, direction: TransactionDirection, startTime: Long, endTime: Long): Flow<Long> =
         transactionDao.observeSumForDay(boothId, direction, startTime, endTime)
 
+    fun observeCommissionSumForDay(boothId: Long?, startTime: Long, endTime: Long): Flow<Long> =
+        transactionDao.observeCommissionSumForDay(boothId, startTime, endTime)
+
     fun observeLatestKnownBalance(boothId: Long?): Flow<Long?> = transactionDao.observeLatestKnownBalance(boothId)
 
     /** Inserts a ledger row from a parsed SMS result, or returns the existing row if [dedupKey] was already seen. */
@@ -66,39 +72,40 @@ class TransactionRepository(
         transactionDao.getByDedupKey(dedupKey)?.let { return InsertOutcome(it.id, wasDuplicate = true) }
 
         val now = System.currentTimeMillis()
-        val id = transactionDao.insert(
-            TransactionEntity(
-                providerId = providerId,
-                externalTransactionId = parsed.externalTransactionId,
-                transactionType = parsed.transactionType,
-                status = parsed.status,
-                direction = parsed.direction,
-                amountMinor = parsed.amountMinor,
-                currency = parsed.currency,
-                feeMinor = parsed.feeMinor,
-                senderName = parsed.senderName,
-                senderPhone = parsed.senderPhone,
-                recipientName = parsed.recipientName,
-                recipientPhone = parsed.recipientPhone,
-                merchantTillNumber = parsed.merchantTillNumber,
-                merchantName = parsed.merchantName,
-                serviceName = parsed.serviceName,
-                balanceBeforeMinor = parsed.balanceBeforeMinor,
-                balanceAfterMinor = parsed.balanceAfterMinor,
-                transactionTimestamp = parsed.transactionTimestamp,
-                smsReceivedTimestamp = smsReceivedTimestamp,
-                employeeId = employeeId,
-                boothId = boothId,
-                shiftId = shiftId,
-                businessClassification = BusinessClassification.UNKNOWN,
-                rawSmsId = rawSmsId,
-                dedupKey = dedupKey,
-                parserVersion = parserVersion,
-                source = source,
-                createdAt = now,
-                updatedAt = now,
-            ),
+        val entity = TransactionEntity(
+            providerId = providerId,
+            externalTransactionId = parsed.externalTransactionId,
+            transactionType = parsed.transactionType,
+            status = parsed.status,
+            direction = parsed.direction,
+            amountMinor = parsed.amountMinor,
+            currency = parsed.currency,
+            feeMinor = parsed.feeMinor,
+            commissionMinor = parsed.commissionMinor,
+            senderName = parsed.senderName,
+            senderPhone = parsed.senderPhone,
+            recipientName = parsed.recipientName,
+            recipientPhone = parsed.recipientPhone,
+            merchantTillNumber = parsed.merchantTillNumber,
+            merchantName = parsed.merchantName,
+            serviceName = parsed.serviceName,
+            balanceBeforeMinor = parsed.balanceBeforeMinor,
+            balanceAfterMinor = parsed.balanceAfterMinor,
+            transactionTimestamp = parsed.transactionTimestamp,
+            smsReceivedTimestamp = smsReceivedTimestamp,
+            employeeId = employeeId,
+            boothId = boothId,
+            shiftId = shiftId,
+            businessClassification = BusinessClassification.UNKNOWN,
+            rawSmsId = rawSmsId,
+            dedupKey = dedupKey,
+            parserVersion = parserVersion,
+            source = source,
+            createdAt = now,
+            updatedAt = now,
         )
+        val id = transactionDao.insert(entity)
+        outbox.changed(SyncEntityType.TRANSACTION, entity.uid)
         return InsertOutcome(id, wasDuplicate = false)
     }
 
@@ -117,30 +124,30 @@ class TransactionRepository(
         performedBy: String,
     ): Long {
         val now = System.currentTimeMillis()
-        val id = transactionDao.insert(
-            TransactionEntity(
-                providerId = providerId,
-                transactionType = transactionType,
-                status = TransactionStatus.CONFIRMED,
-                direction = direction,
-                amountMinor = amountMinor,
-                currency = currency,
-                senderName = null,
-                merchantName = note,
-                smsReceivedTimestamp = now,
-                employeeId = employeeId,
-                boothId = boothId,
-                shiftId = shiftId,
-                businessClassification = classification,
-                rawSmsId = null,
-                dedupKey = dedupKey,
-                parserVersion = "manual",
-                source = TransactionSource.MANUAL_ENTRY,
-                createdAt = now,
-                updatedAt = now,
-            ),
+        val entity = TransactionEntity(
+            providerId = providerId,
+            transactionType = transactionType,
+            status = TransactionStatus.CONFIRMED,
+            direction = direction,
+            amountMinor = amountMinor,
+            currency = currency,
+            senderName = null,
+            merchantName = note,
+            smsReceivedTimestamp = now,
+            employeeId = employeeId,
+            boothId = boothId,
+            shiftId = shiftId,
+            businessClassification = classification,
+            rawSmsId = null,
+            dedupKey = dedupKey,
+            parserVersion = "manual",
+            source = TransactionSource.MANUAL_ENTRY,
+            createdAt = now,
+            updatedAt = now,
         )
-        auditLogDao.insert(
+        val id = transactionDao.insert(entity)
+        outbox.changed(SyncEntityType.TRANSACTION, entity.uid)
+        audit(
             AuditLogEntity(
                 entityType = "transaction",
                 entityId = id,
@@ -163,7 +170,8 @@ class TransactionRepository(
         if (existing.businessClassification == newClassification) return
         val now = System.currentTimeMillis()
         transactionDao.update(existing.copy(businessClassification = newClassification, updatedAt = now))
-        auditLogDao.insert(
+        outbox.changed(SyncEntityType.TRANSACTION, existing.uid)
+        audit(
             AuditLogEntity(
                 entityType = "transaction",
                 entityId = transactionId,
@@ -188,7 +196,8 @@ class TransactionRepository(
         val existing = transactionDao.getByIdOnce(transactionId) ?: return
         val now = System.currentTimeMillis()
         transactionDao.update(existing.copy(employeeId = newEmployeeId, shiftId = newShiftId, updatedAt = now))
-        auditLogDao.insert(
+        outbox.changed(SyncEntityType.TRANSACTION, existing.uid)
+        audit(
             AuditLogEntity(
                 entityType = "transaction",
                 entityId = transactionId,
@@ -207,7 +216,8 @@ class TransactionRepository(
         val existing = transactionDao.getByIdOnce(transactionId) ?: return
         val now = System.currentTimeMillis()
         transactionDao.update(existing.copy(status = TransactionStatus.REJECTED, updatedAt = now))
-        auditLogDao.insert(
+        outbox.changed(SyncEntityType.TRANSACTION, existing.uid)
+        audit(
             AuditLogEntity(
                 entityType = "transaction",
                 entityId = transactionId,
@@ -219,5 +229,10 @@ class TransactionRepository(
                 timestamp = now,
             ),
         )
+    }
+
+    private suspend fun audit(entry: AuditLogEntity) {
+        auditLogDao.insert(entry)
+        outbox.changed(SyncEntityType.AUDIT_LOG, entry.uid)
     }
 }

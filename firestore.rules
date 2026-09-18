@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// Pilot rules: any signed-in app instance may read/write. Membership-based rules (owner vs booth
+// per business) arrive with phone-number sign-in. Nothing may be deleted from the cloud.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /joinCodes/{code} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if false;
+    }
+    match /businesses/{businessUid} {
+      allow read, create, update: if request.auth != null;
+      allow delete: if false;
+      match /{collection}/{docId} {
+        allow read, create, update: if request.auth != null;
+        allow delete: if false;
+      }
+    }
+  }
+}

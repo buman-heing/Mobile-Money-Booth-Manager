@@ -92,6 +92,16 @@ interface TransactionDao {
 
     @Query(
         """
+        SELECT COALESCE(SUM(commissionMinor), 0) FROM transactions
+        WHERE (:boothId IS NULL OR boothId = :boothId)
+          AND smsReceivedTimestamp BETWEEN :startTime AND :endTime
+          AND status IN ('PARSED', 'CONFIRMED')
+        """,
+    )
+    fun observeCommissionSumForDay(boothId: Long?, startTime: Long, endTime: Long): Flow<Long>
+
+    @Query(
+        """
         SELECT balanceAfterMinor FROM transactions
         WHERE (:boothId IS NULL OR boothId = :boothId)
           AND balanceAfterMinor IS NOT NULL
@@ -101,4 +111,7 @@ interface TransactionDao {
         """,
     )
     fun observeLatestKnownBalance(boothId: Long?): Flow<Long?>
+
+    @Query("SELECT * FROM transactions WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): TransactionEntity?
 }

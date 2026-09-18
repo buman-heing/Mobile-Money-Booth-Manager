@@ -1,9 +1,11 @@
 package com.moneybooth.app.core.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.moneybooth.app.core.sync.newUid
 
 /**
  * A provider account (e.g. an Airtel Money line) tied to a booth. Modeled now, even though
@@ -20,10 +22,11 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("boothId")],
+    indices = [Index("uid", unique = true), Index("boothId")],
 )
 data class MobileMoneyAccountEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    @ColumnInfo(defaultValue = "") val uid: String = newUid(),
     val boothId: Long,
     val providerId: String,
     val label: String,

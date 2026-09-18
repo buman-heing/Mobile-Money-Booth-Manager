@@ -20,40 +20,124 @@ class AirtelParserRegressionTest {
     private fun parse(body: String, sender: String = "AIRTEL") =
         provider.parser.parse(RawSmsInput(sender, body, receivedTimestamp = 0L))
 
+    // ---- Agent-side shapes (real booth SIM samples, Sept 2026) ----
+
     @Test
-    fun `withdrawal sms`() {
+    fun `agent cash-out sms - customer withdrew, booth float went up, commission earned`() {
         val outcome = parse(
-            "You have withdrawn ZMW 48.00 from 1824209 Joseph Lungu. Bal is ZMW 0.06. TID: CO260916.1609.H17346.",
+            "ZMW 900.00  received from 977992879 Angela Chazura. Bal ZMW 902.03. Comm ZMW 9.00 TID: CO260914.1556.V49915",
+        )
+        assertTrue(outcome is ParserOutcome.Matched)
+        val result = (outcome as ParserOutcome.Matched).result
+
+        assertEquals("airtel.cash_out.v1", result.matcherId)
+        assertEquals(TransactionType.WITHDRAWAL, result.transactionType)
+        assertEquals(TransactionStatus.PARSED, result.status)
+        assertEquals(TransactionDirection.IN, result.direction)
+        assertEquals(90000L, result.amountMinor)
+        assertEquals("ZMW", result.currency)
+        assertEquals("977992879", result.senderPhone)
+        assertEquals("Angela Chazura", result.senderName)
+        assertEquals(90203L, result.balanceAfterMinor)
+        assertEquals(900L, result.commissionMinor)
+        assertEquals("CO260914.1556.V49915", result.externalTransactionId)
+    }
+
+    @Test
+    fun `agent cash-out sms - larger amount and multi-word name`() {
+        val outcome = parse(
+            "ZMW 1030.00  received from 975921874 Churchil Hakazeene. Bal ZMW 1823.12. Comm ZMW 10.00 TID: CO260904.1226.L86643",
         )
         assertTrue(outcome is ParserOutcome.Matched)
         val result = (outcome as ParserOutcome.Matched).result
 
         assertEquals(TransactionType.WITHDRAWAL, result.transactionType)
-        assertEquals(TransactionStatus.PARSED, result.status)
-        assertEquals(TransactionDirection.OUT, result.direction)
-        assertEquals(4800L, result.amountMinor)
-        assertEquals("ZMW", result.currency)
-        assertEquals("1824209", result.merchantTillNumber)
-        assertEquals("Joseph Lungu", result.merchantName)
-        assertEquals(6L, result.balanceAfterMinor)
-        assertEquals("CO260916.1609.H17346", result.externalTransactionId)
+        assertEquals(103000L, result.amountMinor)
+        assertEquals("Churchil Hakazeene", result.senderName)
+        assertEquals(182312L, result.balanceAfterMinor)
+        assertEquals(1000L, result.commissionMinor)
+        assertEquals("CO260904.1226.L86643", result.externalTransactionId)
     }
 
     @Test
-    fun `money received sms with no balance supplied`() {
+    fun `agent cash-in sms - customer deposited, booth float went down, commission earned`() {
         val outcome = parse(
-            "You have received ZMW 50.00 from 977429540 David Phiri.Dial *115# to check your new Bal. TID: PP260916.1603.N90253.",
+            "You have sent ZMW 5.00 to 970532065 GRACE CHANDA. Bal ZMW 51.36.Com ZMW 0.03 TID: CI260816.2154.L14464",
         )
         assertTrue(outcome is ParserOutcome.Matched)
         val result = (outcome as ParserOutcome.Matched).result
 
+        assertEquals("airtel.cash_in.v1", result.matcherId)
+        assertEquals(TransactionType.DEPOSIT, result.transactionType)
+        assertEquals(TransactionStatus.PARSED, result.status)
+        assertEquals(TransactionDirection.OUT, result.direction)
+        assertEquals(500L, result.amountMinor)
+        assertEquals("970532065", result.recipientPhone)
+        assertEquals("GRACE CHANDA", result.recipientName)
+        assertEquals("balance must stop before the '.Com' that follows it", 5136L, result.balanceAfterMinor)
+        assertEquals(3L, result.commissionMinor)
+        assertEquals("CI260816.2154.L14464", result.externalTransactionId)
+    }
+
+    @Test
+    fun `agent cash-in sms - large amount and lowercase name`() {
+        val outcome = parse(
+            "You have sent ZMW 3000.00 to 976095648 estery changwa. Bal ZMW 24.12.Com ZMW 15.00 TID: CI260915.0930.B14366",
+        )
+        assertTrue(outcome is ParserOutcome.Matched)
+        val result = (outcome as ParserOutcome.Matched).result
+
+        assertEquals(TransactionType.DEPOSIT, result.transactionType)
+        assertEquals(300000L, result.amountMinor)
+        assertEquals("estery changwa", result.recipientName)
+        assertEquals(2412L, result.balanceAfterMinor)
+        assertEquals(1500L, result.commissionMinor)
+        assertEquals("CI260915.0930.B14366", result.externalTransactionId)
+    }
+
+    @Test
+    fun `agent sms still parses when the phone prepends a spam-alert label`() {
+        val outcome = parse(
+            "Spam Alert :You have sent ZMW 1500.00 to 777427400 Shadreck Mwale. Bal ZMW 2.03.Com ZMW 7.50 TID: CI260914.1414.H41591",
+        )
+        assertTrue(outcome is ParserOutcome.Matched)
+        val result = (outcome as ParserOutcome.Matched).result
+
+        assertEquals(TransactionType.DEPOSIT, result.transactionType)
+        assertEquals(150000L, result.amountMinor)
+        assertEquals("Shadreck Mwale", result.recipientName)
+        assertEquals(203L, result.balanceAfterMinor)
+        assertEquals(750L, result.commissionMinor)
+        assertEquals("CI260914.1414.H41591", result.externalTransactionId)
+    }
+
+    /**
+     * Only the prefix up to the sender name is confirmed from a real screenshot (the rest was cut
+     * off); the tail here is synthetic. The matcher deliberately relies on nothing after the name
+     * except the TID, so replace the tail with a real one when a full sample is available.
+     */
+    @Test
+    fun `plain p2p receive sms has no commission and no balance`() {
+        val outcome = parse(
+            "Money received ZMW 10.00 from 20317390 Grace Chanda. Dial *115# to check balance. TID: PP260904.2016.K11111",
+        )
+        assertTrue(outcome is ParserOutcome.Matched)
+        val result = (outcome as ParserOutcome.Matched).result
+
+        assertEquals("airtel.p2p_receive.v2", result.matcherId)
         assertEquals(TransactionType.P2P_RECEIVE, result.transactionType)
         assertEquals(TransactionDirection.IN, result.direction)
-        assertEquals(5000L, result.amountMinor)
-        assertEquals("977429540", result.senderPhone)
-        assertEquals("David Phiri", result.senderName)
+        assertEquals(1000L, result.amountMinor)
+        assertEquals("20317390", result.senderPhone)
+        assertEquals("Grace Chanda", result.senderName)
         assertNull("balance must be null, the SMS never supplies it", result.balanceAfterMinor)
-        assertEquals("PP260916.1603.N90253", result.externalTransactionId)
+        assertNull("a plain P2P receive earns no agent commission", result.commissionMinor)
+        assertEquals("PP260904.2016.K11111", result.externalTransactionId)
+    }
+
+    @Test
+    fun `balance check response is not a transaction`() {
+        assertEquals(ParserOutcome.NoMatch, parse("Your Current Balance is ZMW 6.32"))
     }
 
     @Test
@@ -147,6 +231,7 @@ class AirtelParserRegressionTest {
     @Test
     fun `detector recognizes airtel by sender id`() {
         assertTrue(provider.detector.matches(RawSmsInput("AIRTEL", "anything at all", 0L)))
+        assertTrue(provider.detector.matches(RawSmsInput("AirtelMoney", "anything at all", 0L)))
     }
 
     @Test
@@ -155,7 +240,7 @@ class AirtelParserRegressionTest {
             provider.detector.matches(
                 RawSmsInput(
                     "12345",
-                    "You have received ZMW 50.00 from 977429540 David Phiri.Dial *115# to check your new Bal. TID: PP260916.1603.N90253.",
+                    "ZMW 900.00  received from 977992879 Angela Chazura. Bal ZMW 902.03. Comm ZMW 9.00 TID: CO260914.1556.V49915",
                     0L,
                 ),
             ),

@@ -16,4 +16,7 @@ interface CashMovementDao {
 
     @Query("SELECT * FROM cash_movements WHERE shiftId = :shiftId ORDER BY recordedAt")
     suspend fun getByShiftOnce(shiftId: Long): List<CashMovementEntity>
+
+    @Query("SELECT * FROM cash_movements WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): CashMovementEntity?
 }

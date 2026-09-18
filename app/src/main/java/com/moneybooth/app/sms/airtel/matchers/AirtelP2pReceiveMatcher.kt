@@ -8,15 +8,21 @@ import com.moneybooth.app.core.domain.transactions.TransactionStatus
 import com.moneybooth.app.core.domain.transactions.TransactionType
 import com.moneybooth.app.sms.common.SmsShapeMatcher
 
-/** "You have received ZMW 50.00 from 977429540 David Phiri.Dial *115# to check your new Bal. TID: PP260916.1603.N90253." */
+/**
+ * Plain person-to-person receive on the booth line (not a cash-out: no commission, no balance).
+ *
+ * "Money received ZMW 10.00 from 20317390 Grace Chanda. Dial *115# to check balance. TID: PP..."
+ *
+ * The text between the sender name and the TID is not relied upon, only the TID is.
+ */
 class AirtelP2pReceiveMatcher : SmsShapeMatcher {
-    override val id = "airtel.p2p_receive.v1"
+    override val id = "airtel.p2p_receive.v2"
 
     private val pattern = Regex(
-        """(?i)you\s+have\s+received\s+ZMW\s*([\d,.]+)\s+from\s+(\S+)\s+([^.]+?)\.[\s\S]*?TID:?\s*(\S+)""",
+        """(?i)money\s+received\s+ZMW\s*$AMOUNT\s+from\s+(\S+)\s+(.+?)\.[\s\S]*?TID\W*(\S+)""",
     )
 
-    override fun quickCheck(body: String): Boolean = body.contains("received", ignoreCase = true)
+    override fun quickCheck(body: String): Boolean = body.contains("money received", ignoreCase = true)
 
     override fun tryParse(input: RawSmsInput): ParsedTransactionResult? {
         val match = pattern.find(input.body) ?: return null
@@ -25,7 +31,6 @@ class AirtelP2pReceiveMatcher : SmsShapeMatcher {
         val name = match.groupValues[3].trim()
         val tid = match.groupValues[4].trim().removeSuffix(".")
 
-        // Deliberately no balance capture group: this SMS shape never supplies one.
         return ParsedTransactionResult(
             transactionType = TransactionType.P2P_RECEIVE,
             status = TransactionStatus.PARSED,

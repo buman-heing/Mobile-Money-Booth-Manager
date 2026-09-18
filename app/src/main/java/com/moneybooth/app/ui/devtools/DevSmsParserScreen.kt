@@ -97,6 +97,10 @@ fun DevSmsParserScreen(container: AppContainer) {
                             "Balance after",
                             s.preview.balanceAfterMinor?.let { Money.formatWithCurrency(it) } ?: "Not supplied",
                         )
+                        PreviewRow(
+                            "Commission",
+                            s.preview.commissionMinor?.let { Money.formatWithCurrency(it) } ?: "—",
+                        )
                         PreviewRow("Party", s.preview.party ?: "—")
                         PreviewRow("Confidence", s.preview.confidence.name)
                         PreviewRow(

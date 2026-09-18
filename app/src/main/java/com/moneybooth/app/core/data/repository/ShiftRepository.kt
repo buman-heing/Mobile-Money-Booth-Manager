@@ -5,6 +5,8 @@ import com.moneybooth.app.core.data.database.entities.ShiftEntity
 import com.moneybooth.app.core.domain.employees.ShiftOpenCheck
 import com.moneybooth.app.core.domain.employees.ShiftRules
 import com.moneybooth.app.core.domain.employees.ShiftStatus
+import com.moneybooth.app.core.sync.SyncEntityType
+import com.moneybooth.app.core.sync.SyncOutbox
 import kotlinx.coroutines.flow.Flow
 
 sealed interface OpenShiftResult {
@@ -13,7 +15,7 @@ sealed interface OpenShiftResult {
     data class AlreadyOpenForEmployee(val existingShift: ShiftEntity) : OpenShiftResult
 }
 
-class ShiftRepository(private val shiftDao: ShiftDao) {
+class ShiftRepository(private val shiftDao: ShiftDao, private val outbox: SyncOutbox) {
     fun observeById(id: Long): Flow<ShiftEntity?> = shiftDao.observeById(id)
 
     suspend fun getByIdOnce(id: Long): ShiftEntity? = shiftDao.getByIdOnce(id)
@@ -45,19 +47,19 @@ class ShiftRepository(private val shiftDao: ShiftDao) {
         }
 
         val now = System.currentTimeMillis()
-        val id = shiftDao.insert(
-            ShiftEntity(
-                boothId = boothId,
-                employeeId = employeeId,
-                mobileMoneyAccountId = mobileMoneyAccountId,
-                status = ShiftStatus.OPEN,
-                openedAt = now,
-                openingCashMinor = openingCashMinor,
-                openingMobileMoneyBalanceMinor = openingMobileMoneyBalanceMinor,
-                createdAt = now,
-                updatedAt = now,
-            ),
+        val entity = ShiftEntity(
+            boothId = boothId,
+            employeeId = employeeId,
+            mobileMoneyAccountId = mobileMoneyAccountId,
+            status = ShiftStatus.OPEN,
+            openedAt = now,
+            openingCashMinor = openingCashMinor,
+            openingMobileMoneyBalanceMinor = openingMobileMoneyBalanceMinor,
+            createdAt = now,
+            updatedAt = now,
         )
+        val id = shiftDao.insert(entity)
+        outbox.changed(SyncEntityType.SHIFT, entity.uid)
         return OpenShiftResult.Success(id)
     }
 
@@ -72,5 +74,6 @@ class ShiftRepository(private val shiftDao: ShiftDao) {
                 updatedAt = now,
             ),
         )
+        outbox.changed(SyncEntityType.SHIFT, existing.uid)
     }
 }

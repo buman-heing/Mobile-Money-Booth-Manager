@@ -1,9 +1,11 @@
 package com.moneybooth.app.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import com.moneybooth.app.core.data.database.entities.TransactionEntity
 import com.moneybooth.app.core.data.repository.TransactionRepository
 import com.moneybooth.app.core.domain.transactions.TransactionDirection
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.util.Calendar
 
 class DashboardViewModel(private val transactionRepository: TransactionRepository) : ViewModel() {
@@ -34,5 +36,13 @@ class DashboardViewModel(private val transactionRepository: TransactionRepositor
         return transactionRepository.observeSumForDay(boothId, TransactionDirection.OUT, start, end)
     }
 
+    fun observeTodayCommission(boothId: Long?): Flow<Long> {
+        val (start, end) = todayRange()
+        return transactionRepository.observeCommissionSumForDay(boothId, start, end)
+    }
+
     fun observeMobileMoneyBalance(boothId: Long?): Flow<Long?> = transactionRepository.observeLatestKnownBalance(boothId)
+
+    fun observeRecent(limit: Int = 5): Flow<List<TransactionEntity>> =
+        transactionRepository.filter().map { it.take(limit) }
 }

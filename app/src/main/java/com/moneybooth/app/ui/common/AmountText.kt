@@ -9,8 +9,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import com.moneybooth.app.core.domain.accounting.Money
 import com.moneybooth.app.core.domain.transactions.TransactionDirection
+import com.moneybooth.app.ui.theme.MoneyIn
+import com.moneybooth.app.ui.theme.MoneyOut
 
-/** Renders a minor-units amount as a currency string, e.g. "ZMW 48.00". */
+/** Renders a minor-units amount as a signed currency string, e.g. "+ ZMW 48.00". */
 @Composable
 fun AmountText(
     amountMinor: Long?,
@@ -19,18 +21,19 @@ fun AmountText(
     direction: TransactionDirection? = null,
     style: TextStyle = LocalTextStyle.current,
     unknownLabel: String = "Not supplied",
+    signed: Boolean = true,
 ) {
     val color = when (direction) {
-        TransactionDirection.IN -> MoneyInGreenColor()
-        TransactionDirection.OUT -> MoneyOutRedColor()
+        TransactionDirection.IN -> MoneyIn
+        TransactionDirection.OUT -> MoneyOut
         else -> MaterialTheme.colorScheme.onSurface
     }
-    val text = if (amountMinor == null) unknownLabel else Money.formatWithCurrency(amountMinor, currency)
-    Text(text = text, modifier = modifier, style = style.copy(fontWeight = FontWeight.SemiBold, color = color))
+    val prefix = when {
+        !signed || amountMinor == null -> ""
+        direction == TransactionDirection.IN -> "+ "
+        direction == TransactionDirection.OUT -> "− "
+        else -> ""
+    }
+    val text = if (amountMinor == null) unknownLabel else prefix + Money.formatWithCurrency(amountMinor, currency)
+    Text(text = text, modifier = modifier, style = style.copy(fontWeight = FontWeight.Bold, color = color))
 }
-
-@Composable
-private fun MoneyInGreenColor() = com.moneybooth.app.ui.theme.MoneyInGreen
-
-@Composable
-private fun MoneyOutRedColor() = com.moneybooth.app.ui.theme.MoneyOutRed

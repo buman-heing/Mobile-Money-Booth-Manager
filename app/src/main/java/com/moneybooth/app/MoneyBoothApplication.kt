@@ -14,6 +14,7 @@ class MoneyBoothApplication : Application(), Configuration.Provider {
         super.onCreate()
         container = AppContainer(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(container.sessionManager)
+        container.syncScheduler.ensurePeriodic()
     }
 
     override val workManagerConfiguration: Configuration

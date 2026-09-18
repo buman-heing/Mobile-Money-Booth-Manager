@@ -12,6 +12,7 @@ import com.moneybooth.app.core.domain.transactions.TransactionDirection
 import com.moneybooth.app.core.domain.transactions.TransactionSource
 import com.moneybooth.app.core.domain.transactions.TransactionStatus
 import com.moneybooth.app.core.domain.transactions.TransactionType
+import com.moneybooth.app.core.sync.SyncEntityType
 
 class Converters {
     @TypeConverter
@@ -82,4 +83,10 @@ class Converters {
 
     @TypeConverter
     fun toAuditActionType(value: String): AuditActionType = AuditActionType.valueOf(value)
+
+    @TypeConverter
+    fun fromSyncEntityType(value: SyncEntityType): String = value.name
+
+    @TypeConverter
+    fun toSyncEntityType(value: String): SyncEntityType = SyncEntityType.valueOf(value)
 }

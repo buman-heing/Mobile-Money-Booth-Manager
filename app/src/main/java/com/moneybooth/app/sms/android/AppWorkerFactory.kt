@@ -13,6 +13,8 @@ class AppWorkerFactory(private val container: AppContainer) : WorkerFactory() {
         workerParameters: WorkerParameters,
     ): ListenableWorker? = when (workerClassName) {
         SmsIngestionWorker::class.java.name -> SmsIngestionWorker(appContext, workerParameters, container)
+        SyncWorker::class.java.name -> SyncWorker(appContext, workerParameters, container)
+        PullWorker::class.java.name -> PullWorker(appContext, workerParameters, container)
         else -> null
     }
 }

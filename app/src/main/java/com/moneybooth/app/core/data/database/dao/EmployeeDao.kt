@@ -29,4 +29,7 @@ interface EmployeeDao {
 
     @Query("SELECT * FROM employees WHERE assignedBoothId = :boothId AND active = 1 ORDER BY name")
     fun observeActiveByBooth(boothId: Long): Flow<List<EmployeeEntity>>
+
+    @Query("SELECT * FROM employees WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): EmployeeEntity?
 }

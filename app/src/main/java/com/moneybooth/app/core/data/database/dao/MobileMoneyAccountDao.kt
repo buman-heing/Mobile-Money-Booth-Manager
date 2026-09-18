@@ -18,9 +18,15 @@ interface MobileMoneyAccountDao {
     @Query("SELECT * FROM mobile_money_accounts WHERE id = :id")
     fun observeById(id: Long): Flow<MobileMoneyAccountEntity?>
 
+    @Query("SELECT * FROM mobile_money_accounts WHERE id = :id")
+    suspend fun getByIdOnce(id: Long): MobileMoneyAccountEntity?
+
     @Query("SELECT * FROM mobile_money_accounts WHERE boothId = :boothId ORDER BY label")
     fun observeByBooth(boothId: Long): Flow<List<MobileMoneyAccountEntity>>
 
     @Query("SELECT * FROM mobile_money_accounts WHERE boothId = :boothId AND active = 1 ORDER BY label")
     suspend fun getActiveByBoothOnce(boothId: Long): List<MobileMoneyAccountEntity>
+
+    @Query("SELECT * FROM mobile_money_accounts WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): MobileMoneyAccountEntity?
 }

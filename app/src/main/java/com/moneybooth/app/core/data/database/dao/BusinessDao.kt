@@ -26,4 +26,7 @@ interface BusinessDao {
 
     @Query("SELECT * FROM businesses ORDER BY name")
     fun observeAll(): Flow<List<BusinessEntity>>
+
+    @Query("SELECT * FROM businesses WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): BusinessEntity?
 }

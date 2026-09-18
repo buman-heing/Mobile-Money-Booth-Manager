@@ -13,6 +13,8 @@ data class ParsedTransactionResult(
     val amountMinor: Long? = null,
     val currency: String = Money.DEFAULT_CURRENCY,
     val feeMinor: Long? = null,
+    /** Agent commission earned on this transaction (booth revenue). Distinct from [feeMinor], which is a cost. */
+    val commissionMinor: Long? = null,
     val senderName: String? = null,
     val senderPhone: String? = null,
     val recipientName: String? = null,

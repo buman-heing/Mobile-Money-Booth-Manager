@@ -15,10 +15,23 @@ import com.moneybooth.app.core.data.repository.ShiftRepository
 import com.moneybooth.app.core.data.repository.TransactionRepository
 import com.moneybooth.app.core.domain.employees.AttributionService
 import com.moneybooth.app.core.domain.reconciliation.ReconciliationService
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.MemoryCacheSettings
+import com.moneybooth.app.cloud.CloudAuth
+import com.moneybooth.app.cloud.CloudPuller
+import com.moneybooth.app.cloud.CloudSyncController
+import com.moneybooth.app.cloud.FirestoreRemoteStore
+import com.moneybooth.app.core.sync.RecordAssembler
+import com.moneybooth.app.core.sync.RemoteApplier
+import com.moneybooth.app.core.sync.SyncEngine
+import com.moneybooth.app.core.sync.SyncOutbox
 import com.moneybooth.app.security.PinCredentialStore
 import com.moneybooth.app.security.SessionManager
 import com.moneybooth.app.sms.airtel.AirtelMoneyProvider
 import com.moneybooth.app.sms.android.SmsPermissionManager
+import com.moneybooth.app.sms.android.SyncScheduler
 import com.moneybooth.app.sms.common.SmsIngestionPipeline
 import com.moneybooth.app.sms.providers.ProviderRegistry
 
@@ -31,18 +44,36 @@ class AppContainer(context: Context) {
         context.applicationContext,
         AppDatabase::class.java,
         AppDatabase.DATABASE_NAME,
-    ).build()
+    ).addMigrations(*AppDatabase.ALL_MIGRATIONS).build()
 
-    val businessRepository = BusinessRepository(database.businessDao())
-    val boothRepository = BoothRepository(database.boothDao())
-    val employeeRepository = EmployeeRepository(database.employeeDao())
-    val mobileMoneyAccountRepository = MobileMoneyAccountRepository(database.mobileMoneyAccountDao())
-    val shiftRepository = ShiftRepository(database.shiftDao())
-    val rawSmsRepository = RawSmsRepository(database.rawSmsDao())
-    val transactionRepository = TransactionRepository(database.transactionDao(), database.auditLogDao())
-    val cashMovementRepository = CashMovementRepository(database.cashMovementDao())
-    val auditLogRepository = AuditLogRepository(database.auditLogDao())
-    val reconciliationRepository = ReconciliationRepository(database.reconciliationDao())
+    val deviceSettingsStore = DeviceSettingsStore(context.applicationContext)
+    val syncScheduler = SyncScheduler(context.applicationContext)
+
+    /** Every repository write lands here; the scheduler then asks the worker to upload when online. */
+    val syncOutbox = SyncOutbox(database.syncOutboxDao()).apply { onChanged = { syncScheduler.requestNow() } }
+
+    val businessRepository = BusinessRepository(database.businessDao(), syncOutbox)
+    val boothRepository = BoothRepository(database.boothDao(), syncOutbox)
+    val employeeRepository = EmployeeRepository(database.employeeDao(), syncOutbox)
+    val mobileMoneyAccountRepository = MobileMoneyAccountRepository(database.mobileMoneyAccountDao(), syncOutbox)
+    val shiftRepository = ShiftRepository(database.shiftDao(), syncOutbox)
+    val rawSmsRepository = RawSmsRepository(database.rawSmsDao(), syncOutbox)
+    val transactionRepository = TransactionRepository(database.transactionDao(), database.auditLogDao(), syncOutbox)
+    val cashMovementRepository = CashMovementRepository(database.cashMovementDao(), syncOutbox)
+    val auditLogRepository = AuditLogRepository(database.auditLogDao(), syncOutbox)
+    val reconciliationRepository = ReconciliationRepository(database.reconciliationDao(), syncOutbox)
+
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance().apply {
+        // Our own outbox is the offline queue; Firestore's disk cache would just double-buffer it.
+        firestoreSettings = FirebaseFirestoreSettings.Builder()
+            .setLocalCacheSettings(MemoryCacheSettings.newBuilder().build())
+            .build()
+    }
+    private val cloudAuth = CloudAuth(FirebaseAuth.getInstance())
+    val remoteStore: FirestoreRemoteStore = FirestoreRemoteStore(firestore, cloudAuth)
+    val syncEngine = SyncEngine(database.syncOutboxDao(), remoteStore, assemble = RecordAssembler(database)::assemble)
+    val cloudPuller = CloudPuller(firestore, cloudAuth, RemoteApplier(database), deviceSettingsStore)
+    val cloudSyncController = CloudSyncController(cloudPuller, deviceSettingsStore, businessRepository)
 
     /** Registered providers. New providers plug in here without touching accounting code. */
     val providerRegistry = ProviderRegistry(providers = listOf(AirtelMoneyProvider()))
@@ -59,6 +90,5 @@ class AppContainer(context: Context) {
 
     val pinCredentialStore = PinCredentialStore(context.applicationContext)
     val sessionManager = SessionManager()
-    val deviceSettingsStore = DeviceSettingsStore(context.applicationContext)
     val smsPermissionManager = SmsPermissionManager(context.applicationContext)
 }

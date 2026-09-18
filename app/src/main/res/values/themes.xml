@@ -1,3 +1,5 @@
 <resources>
-    <style name="Theme.MoneyBooth" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MoneyBooth" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F5F6FB</item>
+    </style>
 </resources>

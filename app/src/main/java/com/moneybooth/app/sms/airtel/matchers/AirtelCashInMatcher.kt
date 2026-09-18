@@ -8,31 +8,40 @@ import com.moneybooth.app.core.domain.transactions.TransactionStatus
 import com.moneybooth.app.core.domain.transactions.TransactionType
 import com.moneybooth.app.sms.common.SmsShapeMatcher
 
-/** "You have withdrawn ZMW 48.00 from 1824209 Joseph Lungu. Bal is ZMW 0.06. TID: CO260916.1609.H17346." */
-class AirtelWithdrawalMatcher : SmsShapeMatcher {
-    override val id = "airtel.withdrawal.v1"
+/**
+ * Agent-side cash-in: a customer deposited cash at the booth, so the booth's float went DOWN.
+ *
+ * "You have sent ZMW 5.00 to 970532065 GRACE CHANDA. Bal ZMW 51.36.Com ZMW 0.03 TID: CI260816.2154.L14464"
+ *
+ * Note the real template has no space between the balance and "Com" — the amount pattern stops
+ * before that period on purpose.
+ */
+class AirtelCashInMatcher : SmsShapeMatcher {
+    override val id = "airtel.cash_in.v1"
 
     private val pattern = Regex(
-        """(?i)you\s+have\s+withdrawn\s+ZMW\s*([\d,.]+)\s+from\s+(\S+)\s+([^.]+?)\.\s*Bal\s+is\s+ZMW\s*([\d,.]+)\.[\s\S]*?TID:?\s*(\S+)""",
+        """(?i)you\s+have\s+sent\s+ZMW\s*$AMOUNT\s+to\s+(\S+)\s+(.+?)\.\s*Bal\s+ZMW\s*$AMOUNT(?:\.?\s*Comm?\s+ZMW\s*$AMOUNT)?[\s\S]*?TID\W*(\S+)""",
     )
 
-    override fun quickCheck(body: String): Boolean = body.contains("withdraw", ignoreCase = true)
+    override fun quickCheck(body: String): Boolean = body.contains("you have sent", ignoreCase = true)
 
     override fun tryParse(input: RawSmsInput): ParsedTransactionResult? {
         val match = pattern.find(input.body) ?: return null
         val amount = Money.parseToMinorUnits(match.groupValues[1]) ?: return null
-        val otherPartyIdentifier = match.groupValues[2].trim()
-        val otherPartyName = match.groupValues[3].trim()
+        val phone = match.groupValues[2].trim()
+        val name = match.groupValues[3].trim()
         val balance = Money.parseToMinorUnits(match.groupValues[4])
-        val tid = match.groupValues[5].trim().removeSuffix(".")
+        val commission = match.groupValues[5].takeIf { it.isNotBlank() }?.let(Money::parseToMinorUnits)
+        val tid = match.groupValues[6].trim().removeSuffix(".")
 
         return ParsedTransactionResult(
-            transactionType = TransactionType.WITHDRAWAL,
+            transactionType = TransactionType.DEPOSIT,
             status = TransactionStatus.PARSED,
             direction = TransactionDirection.OUT,
             amountMinor = amount,
-            merchantTillNumber = otherPartyIdentifier,
-            merchantName = otherPartyName,
+            commissionMinor = commission,
+            recipientPhone = phone,
+            recipientName = name,
             balanceAfterMinor = balance,
             externalTransactionId = tid,
             matcherId = id,

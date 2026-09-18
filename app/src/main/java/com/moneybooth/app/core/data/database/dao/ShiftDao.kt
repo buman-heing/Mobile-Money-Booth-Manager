@@ -36,4 +36,7 @@ interface ShiftDao {
 
     @Query("SELECT * FROM shifts WHERE employeeId = :employeeId ORDER BY openedAt DESC")
     fun observeByEmployee(employeeId: Long): Flow<List<ShiftEntity>>
+
+    @Query("SELECT * FROM shifts WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): ShiftEntity?
 }

@@ -25,4 +25,14 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        (application as MoneyBoothApplication).container.cloudSyncController.start()
+    }
+
+    override fun onStop() {
+        (application as MoneyBoothApplication).container.cloudSyncController.stop()
+        super.onStop()
+    }
 }

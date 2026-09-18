@@ -16,4 +16,7 @@ interface ReconciliationDao {
 
     @Query("SELECT * FROM reconciliations WHERE boothId = :boothId ORDER BY closedAt DESC")
     fun observeByBooth(boothId: Long): Flow<List<ReconciliationEntity>>
+
+    @Query("SELECT * FROM reconciliations WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): ReconciliationEntity?
 }

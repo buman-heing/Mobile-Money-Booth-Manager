@@ -89,6 +89,6 @@ class SmsIngestionPipeline(
     }
 
     companion object {
-        const val PARSER_VERSION = "1"
+        const val PARSER_VERSION = "2"
     }
 }

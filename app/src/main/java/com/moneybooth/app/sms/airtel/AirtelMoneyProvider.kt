@@ -15,6 +15,7 @@ class AirtelMoneyProvider : MobileMoneyProvider {
     override val detector: ProviderDetector = AirtelProviderDetector()
     override val supportedTransactionTypes: Set<TransactionType> = setOf(
         TransactionType.WITHDRAWAL,
+        TransactionType.DEPOSIT,
         TransactionType.P2P_RECEIVE,
         TransactionType.P2P_SEND,
         TransactionType.AIRTIME_TOPUP,

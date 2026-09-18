@@ -1,10 +1,10 @@
 package com.moneybooth.app.ui.auth
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -14,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -32,33 +31,28 @@ fun PinSetupScreen(container: AppContainer, onPinSet: () -> Unit) {
     var confirmPin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+    AuthScaffold(
+        title = "Set up a PIN",
+        subtitle = "It protects your booth's financial data on this device.",
     ) {
-        Text("Set up a PIN", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "Used to protect your booth's financial data on this device.",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
-        )
         OutlinedTextField(
             value = pin,
             onValueChange = { if (it.length <= 8) pin = it.filter(Char::isDigit) },
             label = { Text("New PIN") },
             singleLine = true,
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            shape = MaterialTheme.shapes.small,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
-        androidx.compose.foundation.layout.Spacer(Modifier.padding(top = 12.dp))
+        Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = confirmPin,
             onValueChange = { if (it.length <= 8) confirmPin = it.filter(Char::isDigit) },
             label = { Text("Confirm PIN") },
             singleLine = true,
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            shape = MaterialTheme.shapes.small,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -81,9 +75,10 @@ fun PinSetupScreen(container: AppContainer, onPinSet: () -> Unit) {
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.fillMaxWidth().padding(top = 20.dp).height(54.dp),
         ) {
-            Text("Set PIN")
+            Text("Set PIN", style = MaterialTheme.typography.titleMedium)
         }
     }
 }

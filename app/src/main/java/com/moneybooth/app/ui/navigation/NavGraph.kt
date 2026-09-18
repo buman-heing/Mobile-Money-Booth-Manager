@@ -16,7 +16,10 @@ import com.moneybooth.app.ui.auth.PinLoginScreen
 import com.moneybooth.app.ui.auth.PinSetupScreen
 import com.moneybooth.app.ui.booths.BoothFormScreen
 import com.moneybooth.app.ui.employees.EmployeeFormScreen
+import com.moneybooth.app.core.data.DeviceRole
 import com.moneybooth.app.ui.onboarding.BusinessSetupScreen
+import com.moneybooth.app.ui.onboarding.ConnectScreen
+import com.moneybooth.app.ui.onboarding.RoleChoiceScreen
 import com.moneybooth.app.ui.transactions.TransactionDetailScreen
 import com.moneybooth.app.ui.transactions.TransactionFormScreen
 import com.moneybooth.app.ui.transactions.UnknownSmsReviewScreen
@@ -41,10 +44,20 @@ fun NavGraph(container: AppContainer) {
         return
     }
 
+    val deviceRole by container.deviceSettingsStore.deviceRoleFlow.collectAsStateWithLifecycle()
+    if (deviceRole == DeviceRole.UNSET) {
+        RoleChoiceScreen(onChosen = { container.deviceSettingsStore.deviceRole = it })
+        return
+    }
+
     val business by container.businessRepository.observeFirst().collectAsStateWithLifecycle(initialValue = null)
     val currentBusiness = business
     if (currentBusiness == null) {
-        BusinessSetupScreen(container = container)
+        if (deviceRole == DeviceRole.OWNER) {
+            ConnectScreen(container = container, onBack = { container.deviceSettingsStore.deviceRole = DeviceRole.UNSET })
+        } else {
+            BusinessSetupScreen(container = container)
+        }
         return
     }
 

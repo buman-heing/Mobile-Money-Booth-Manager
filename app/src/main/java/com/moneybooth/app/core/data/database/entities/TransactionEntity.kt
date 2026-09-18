@@ -1,8 +1,10 @@
 package com.moneybooth.app.core.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.moneybooth.app.core.sync.newUid
 import com.moneybooth.app.core.domain.transactions.BusinessClassification
 import com.moneybooth.app.core.domain.transactions.TransactionDirection
 import com.moneybooth.app.core.domain.transactions.TransactionSource
@@ -18,6 +20,7 @@ import com.moneybooth.app.core.domain.transactions.TransactionType
 @Entity(
     tableName = "transactions",
     indices = [
+        Index("uid", unique = true),
         Index("dedupKey", unique = true),
         Index("rawSmsId"),
         Index("boothId"),
@@ -31,6 +34,7 @@ import com.moneybooth.app.core.domain.transactions.TransactionType
 )
 data class TransactionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    @ColumnInfo(defaultValue = "") val uid: String = newUid(),
     val providerId: String,
     val externalTransactionId: String? = null,
     val transactionType: TransactionType,
@@ -39,6 +43,7 @@ data class TransactionEntity(
     val amountMinor: Long? = null,
     val currency: String = "ZMW",
     val feeMinor: Long? = null,
+    val commissionMinor: Long? = null,
     val senderName: String? = null,
     val senderPhone: String? = null,
     val recipientName: String? = null,

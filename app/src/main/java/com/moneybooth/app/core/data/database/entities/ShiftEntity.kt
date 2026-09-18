@@ -1,9 +1,11 @@
 package com.moneybooth.app.core.data.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.moneybooth.app.core.sync.newUid
 import com.moneybooth.app.core.domain.employees.ShiftStatus
 
 @Entity(
@@ -22,10 +24,11 @@ import com.moneybooth.app.core.domain.employees.ShiftStatus
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("boothId"), Index("employeeId"), Index("status")],
+    indices = [Index("uid", unique = true), Index("boothId"), Index("employeeId"), Index("status")],
 )
 data class ShiftEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    @ColumnInfo(defaultValue = "") val uid: String = newUid(),
     val boothId: Long,
     val employeeId: Long,
     val mobileMoneyAccountId: Long? = null,

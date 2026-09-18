@@ -13,4 +13,7 @@ interface AuditLogDao {
 
     @Query("SELECT * FROM audit_log WHERE entityType = :entityType AND entityId = :entityId ORDER BY timestamp DESC")
     fun observeByEntity(entityType: String, entityId: Long): Flow<List<AuditLogEntity>>
+
+    @Query("SELECT * FROM audit_log WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): AuditLogEntity?
 }
