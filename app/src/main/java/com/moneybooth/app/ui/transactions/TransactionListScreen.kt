@@ -40,7 +40,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moneybooth.app.core.data.AppContainer
 import com.moneybooth.app.core.data.database.entities.TransactionEntity
 import com.moneybooth.app.core.domain.transactions.TransactionStatus
+import com.moneybooth.app.core.domain.transactions.TransactionType
 import com.moneybooth.app.ui.common.AmountText
+import com.moneybooth.app.ui.common.UnusualBadge
 import com.moneybooth.app.ui.common.AppViewModelFactory
 import com.moneybooth.app.ui.common.EmptyState
 import com.moneybooth.app.ui.common.FilterChipRow
@@ -180,8 +182,14 @@ private fun TransactionRow(tx: TransactionEntity, onClick: () -> Unit) {
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
-                AmountText(tx.amountMinor, direction = tx.direction, currency = tx.currency, style = MaterialTheme.typography.titleSmall)
-                if (tx.status != TransactionStatus.PARSED) {
+                if (tx.transactionType == TransactionType.BALANCE_CHECK) {
+                    AmountText(tx.balanceAfterMinor, currency = tx.currency, signed = false, style = MaterialTheme.typography.titleSmall)
+                } else {
+                    AmountText(tx.amountMinor, direction = tx.direction, currency = tx.currency, style = MaterialTheme.typography.titleSmall)
+                }
+                if ((tx.discrepancyMinor ?: 0L) != 0L) {
+                    UnusualBadge(modifier = Modifier.padding(top = 4.dp))
+                } else if (tx.status != TransactionStatus.PARSED) {
                     StatusBadge(tx.status, modifier = Modifier.padding(top = 4.dp))
                 }
             }

@@ -41,6 +41,8 @@ import com.moneybooth.app.ui.common.ConfirmDialog
 import com.moneybooth.app.ui.common.StatusBadge
 import com.moneybooth.app.ui.common.TransactionIcon
 import com.moneybooth.app.ui.common.displayLabel
+import com.moneybooth.app.ui.theme.WarningAmber
+import kotlin.math.abs
 
 @Composable
 fun TransactionDetailScreen(transactionId: Long, container: AppContainer) {
@@ -95,6 +97,28 @@ fun TransactionDetailScreen(transactionId: Long, container: AppContainer) {
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 StatusBadge(tx.status, modifier = Modifier.padding(top = 12.dp))
+            }
+        }
+
+        val discrepancy = tx.discrepancyMinor ?: 0L
+        if (discrepancy != 0L) {
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = WarningAmber.copy(alpha = 0.12f),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Unusual — worth a follow-up", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "The balance Airtel reported is ${Money.formatWithCurrency(abs(discrepancy), tx.currency)} " +
+                            (if (discrepancy > 0) "more" else "less") +
+                            " than the previous transactions add up to. A message may have been lost on the network, " +
+                            "or something happened outside the app. Ask the employee what took place before this one.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
             }
         }
 

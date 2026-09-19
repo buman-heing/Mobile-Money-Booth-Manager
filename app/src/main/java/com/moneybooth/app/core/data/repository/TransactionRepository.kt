@@ -51,10 +51,19 @@ class TransactionRepository(
     fun observeSumForDay(boothId: Long?, direction: TransactionDirection, startTime: Long, endTime: Long): Flow<Long> =
         transactionDao.observeSumForDay(boothId, direction, startTime, endTime)
 
+    fun observeCountForDayByDirection(boothId: Long?, direction: TransactionDirection, startTime: Long, endTime: Long): Flow<Int> =
+        transactionDao.observeCountForDayByDirection(boothId, direction, startTime, endTime)
+
     fun observeCommissionSumForDay(boothId: Long?, startTime: Long, endTime: Long): Flow<Long> =
         transactionDao.observeCommissionSumForDay(boothId, startTime, endTime)
 
     fun observeLatestKnownBalance(boothId: Long?): Flow<Long?> = transactionDao.observeLatestKnownBalance(boothId)
+
+    suspend fun getLatestWithBalanceBefore(timestamp: Long): TransactionEntity? =
+        transactionDao.getLatestWithBalanceBefore(timestamp)
+
+    suspend fun getWithoutBalanceBetween(after: Long, before: Long): List<TransactionEntity> =
+        transactionDao.getWithoutBalanceBetween(after, before)
 
     /** Inserts a ledger row from a parsed SMS result, or returns the existing row if [dedupKey] was already seen. */
     suspend fun insertFromParsedResult(
@@ -68,6 +77,7 @@ class TransactionRepository(
         shiftId: Long?,
         employeeId: Long?,
         parserVersion: String,
+        discrepancyMinor: Long? = null,
     ): InsertOutcome {
         transactionDao.getByDedupKey(dedupKey)?.let { return InsertOutcome(it.id, wasDuplicate = true) }
 
@@ -91,6 +101,7 @@ class TransactionRepository(
             serviceName = parsed.serviceName,
             balanceBeforeMinor = parsed.balanceBeforeMinor,
             balanceAfterMinor = parsed.balanceAfterMinor,
+            discrepancyMinor = discrepancyMinor,
             transactionTimestamp = parsed.transactionTimestamp,
             smsReceivedTimestamp = smsReceivedTimestamp,
             employeeId = employeeId,

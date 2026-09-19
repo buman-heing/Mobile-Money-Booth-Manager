@@ -101,6 +101,7 @@ class RecordAssembler(private val db: AppDatabase) {
                     "serviceName" to it.serviceName,
                     "balanceBeforeMinor" to it.balanceBeforeMinor,
                     "balanceAfterMinor" to it.balanceAfterMinor,
+                    "discrepancyMinor" to it.discrepancyMinor,
                     "transactionTimestamp" to it.transactionTimestamp,
                     "smsReceivedTimestamp" to it.smsReceivedTimestamp,
                     "employeeUid" to employeeUid(it.employeeId),

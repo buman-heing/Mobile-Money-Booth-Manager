@@ -40,6 +40,7 @@ fun TransactionType.displayLabel(): String = when (this) {
     TransactionType.LOAN_DISBURSEMENT -> "Loan disbursement"
     TransactionType.BILL_PAYMENT -> "Bill payment"
     TransactionType.AGENT_FLOAT -> "Float"
+    TransactionType.BALANCE_CHECK -> "Balance enquiry"
     TransactionType.UNKNOWN -> "Unknown"
     TransactionType.OTHER -> "Other"
 }
@@ -47,6 +48,7 @@ fun TransactionType.displayLabel(): String = when (this) {
 private fun iconFor(type: TransactionType, direction: TransactionDirection, status: TransactionStatus): ImageVector =
     when {
         status == TransactionStatus.FAILED -> Icons.Rounded.ErrorOutline
+        type == TransactionType.BALANCE_CHECK -> Icons.Rounded.AccountBalanceWallet
         type == TransactionType.AIRTIME_TOPUP -> Icons.Rounded.PhoneAndroid
         type == TransactionType.TILL_PAYMENT -> Icons.Rounded.Storefront
         type == TransactionType.BILL_PAYMENT -> Icons.Rounded.ReceiptLong

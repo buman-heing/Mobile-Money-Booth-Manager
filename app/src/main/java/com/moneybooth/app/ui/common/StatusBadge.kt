@@ -14,6 +14,20 @@ import com.moneybooth.app.ui.theme.MoneyIn
 import com.moneybooth.app.ui.theme.MoneyOut
 import com.moneybooth.app.ui.theme.WarningAmber
 
+/** "The balance didn't add up here" — shown instead of the status pill. */
+@Composable
+fun UnusualBadge(modifier: Modifier = Modifier) {
+    Text(
+        text = "UNUSUAL",
+        modifier = modifier
+            .background(WarningAmber.copy(alpha = 0.18f), CircleShape)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        color = WarningAmber,
+        style = MaterialTheme.typography.labelSmall,
+        textAlign = TextAlign.Center,
+    )
+}
+
 @Composable
 fun StatusBadge(status: TransactionStatus, modifier: Modifier = Modifier) {
     val (label, color) = when (status) {

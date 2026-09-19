@@ -27,6 +27,9 @@ interface BoothDao {
     @Query("SELECT * FROM booths WHERE businessId = :businessId AND active = 1 ORDER BY name")
     fun observeActiveByBusiness(businessId: Long): Flow<List<BoothEntity>>
 
+    @Query("SELECT * FROM booths ORDER BY id LIMIT 1")
+    suspend fun getFirstOnce(): BoothEntity?
+
     @Query("SELECT * FROM booths WHERE uid = :uid LIMIT 1")
     suspend fun getByUid(uid: String): BoothEntity?
 }

@@ -11,6 +11,9 @@ class BoothRepository(private val boothDao: BoothDao, private val outbox: SyncOu
 
     suspend fun getByIdOnce(id: Long): BoothEntity? = boothDao.getByIdOnce(id)
 
+    /** The app keeps one booth per business behind the scenes; this is it. */
+    suspend fun getDefaultOnce(): BoothEntity? = boothDao.getFirstOnce()
+
     fun observeByBusiness(businessId: Long): Flow<List<BoothEntity>> = boothDao.observeByBusiness(businessId)
 
     fun observeActiveByBusiness(businessId: Long): Flow<List<BoothEntity>> =

@@ -29,15 +29,15 @@ import kotlinx.coroutines.launch
 
 /** Owner phone: type the booth phone's share code, then pull that business down. */
 @Composable
-fun ConnectScreen(container: AppContainer, onBack: () -> Unit) {
+fun ConnectScreen(container: AppContainer, onCreateInstead: () -> Unit) {
     val scope = rememberCoroutineScope()
     var code by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     AuthScaffold(
-        title = "Connect to a booth",
-        subtitle = "On the booth phone, open Settings and read out the 6-letter share code.",
+        title = "Join your business",
+        subtitle = "Open Settings on the phone that already has the business and read out its 6-letter share code.",
     ) {
         OutlinedTextField(
             value = code,
@@ -66,7 +66,7 @@ fun ConnectScreen(container: AppContainer, onBack: () -> Unit) {
                     try {
                         val businessUid = container.remoteStore.lookupJoinCode(code)
                         if (businessUid == null) {
-                            error = "No booth found for that code. Check it and try again."
+                            error = "No business found for that code. Check it and try again."
                         } else {
                             container.deviceSettingsStore.cloudBusinessUid = businessUid
                             container.cloudPuller.pullOnce(businessUid)
@@ -86,8 +86,8 @@ fun ConnectScreen(container: AppContainer, onBack: () -> Unit) {
             if (busy) CircularProgressIndicator(modifier = Modifier.height(22.dp), strokeWidth = 2.dp)
             else Text("Connect", style = MaterialTheme.typography.titleMedium)
         }
-        TextButton(onClick = onBack, enabled = !busy, modifier = Modifier.padding(top = 8.dp)) {
-            Text("Back")
+        TextButton(onClick = onCreateInstead, enabled = !busy, modifier = Modifier.padding(top = 8.dp)) {
+            Text("Set up a new business instead")
         }
     }
 }

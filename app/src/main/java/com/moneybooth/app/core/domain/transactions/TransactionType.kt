@@ -16,6 +16,8 @@ enum class TransactionType {
     LOAN_DISBURSEMENT,
     BILL_PAYMENT,
     AGENT_FLOAT,
+    /** Not money movement: the provider's reply to a balance enquiry, used to verify the ledger. */
+    BALANCE_CHECK,
     UNKNOWN,
     OTHER,
 }

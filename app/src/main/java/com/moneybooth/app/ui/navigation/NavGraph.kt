@@ -14,7 +14,7 @@ import androidx.navigation.navArgument
 import com.moneybooth.app.core.data.AppContainer
 import com.moneybooth.app.ui.auth.PinLoginScreen
 import com.moneybooth.app.ui.auth.PinSetupScreen
-import com.moneybooth.app.ui.booths.BoothFormScreen
+import com.moneybooth.app.ui.devtools.DevSmsParserScreen
 import com.moneybooth.app.ui.employees.EmployeeFormScreen
 import com.moneybooth.app.core.data.DeviceRole
 import com.moneybooth.app.ui.onboarding.BusinessSetupScreen
@@ -53,10 +53,12 @@ fun NavGraph(container: AppContainer) {
     val business by container.businessRepository.observeFirst().collectAsStateWithLifecycle(initialValue = null)
     val currentBusiness = business
     if (currentBusiness == null) {
-        if (deviceRole == DeviceRole.OWNER) {
-            ConnectScreen(container = container, onBack = { container.deviceSettingsStore.deviceRole = DeviceRole.UNSET })
+        // Owners usually join a business the employee phone created; employees usually create it. Either can do both.
+        var joining by remember { mutableStateOf(deviceRole == DeviceRole.OWNER) }
+        if (joining) {
+            ConnectScreen(container = container, onCreateInstead = { joining = false })
         } else {
-            BusinessSetupScreen(container = container)
+            BusinessSetupScreen(container = container, onJoinInstead = { joining = true })
         }
         return
     }
@@ -75,12 +77,8 @@ fun NavGraph(container: AppContainer) {
                 },
             )
         }
-        composable(Destinations.BOOTH_ADD) {
-            BoothFormScreen(
-                businessId = currentBusiness.id,
-                container = container,
-                onDone = { navController.popBackStack() },
-            )
+        composable(Destinations.DEV_PARSER) {
+            DevSmsParserScreen(container = container)
         }
         composable(Destinations.EMPLOYEE_ADD) {
             EmployeeFormScreen(

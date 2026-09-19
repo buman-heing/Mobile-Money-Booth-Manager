@@ -1,6 +1,7 @@
 package com.moneybooth.app.sms.airtel
 
 import com.moneybooth.app.sms.airtel.matchers.AirtelAirtimeTopupMatcher
+import com.moneybooth.app.sms.airtel.matchers.AirtelBalanceEnquiryMatcher
 import com.moneybooth.app.sms.airtel.matchers.AirtelCashInMatcher
 import com.moneybooth.app.sms.airtel.matchers.AirtelCashOutMatcher
 import com.moneybooth.app.sms.airtel.matchers.AirtelFailedTransactionMatcher
@@ -27,5 +28,6 @@ class AirtelSmsParser : SmsParser {
         AirtelAirtimeTopupMatcher(),
         AirtelTillPaymentMatcher(),
         AirtelLoanRepaymentMatcher(),
+        AirtelBalanceEnquiryMatcher(),
     )
 }

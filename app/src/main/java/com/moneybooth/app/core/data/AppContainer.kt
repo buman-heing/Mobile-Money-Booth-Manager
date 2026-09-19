@@ -13,6 +13,7 @@ import com.moneybooth.app.core.data.repository.RawSmsRepository
 import com.moneybooth.app.core.data.repository.ReconciliationRepository
 import com.moneybooth.app.core.data.repository.ShiftRepository
 import com.moneybooth.app.core.data.repository.TransactionRepository
+import com.moneybooth.app.core.domain.accounting.DiscrepancyDetector
 import com.moneybooth.app.core.domain.employees.AttributionService
 import com.moneybooth.app.core.domain.reconciliation.ReconciliationService
 import com.google.firebase.auth.FirebaseAuth
@@ -30,6 +31,7 @@ import com.moneybooth.app.core.sync.SyncOutbox
 import com.moneybooth.app.security.PinCredentialStore
 import com.moneybooth.app.security.SessionManager
 import com.moneybooth.app.sms.airtel.AirtelMoneyProvider
+import com.moneybooth.app.sms.android.DiscrepancyNotifier
 import com.moneybooth.app.sms.android.SmsPermissionManager
 import com.moneybooth.app.sms.android.SyncScheduler
 import com.moneybooth.app.sms.common.SmsIngestionPipeline
@@ -72,13 +74,29 @@ class AppContainer(context: Context) {
     private val cloudAuth = CloudAuth(FirebaseAuth.getInstance())
     val remoteStore: FirestoreRemoteStore = FirestoreRemoteStore(firestore, cloudAuth)
     val syncEngine = SyncEngine(database.syncOutboxDao(), remoteStore, assemble = RecordAssembler(database)::assemble)
-    val cloudPuller = CloudPuller(firestore, cloudAuth, RemoteApplier(database), deviceSettingsStore)
-    val cloudSyncController = CloudSyncController(cloudPuller, deviceSettingsStore, businessRepository)
+    private val discrepancyNotifier = DiscrepancyNotifier(context.applicationContext)
+    private val remoteApplier = RemoteApplier(database).apply {
+        // Only the owner is told; the booth phone already shows the flag in its own list.
+        onDiscrepancyArrived = { tx -> if (deviceSettingsStore.deviceRole == DeviceRole.OWNER) discrepancyNotifier.notify(tx) }
+    }
+    val cloudPuller = CloudPuller(firestore, cloudAuth, remoteApplier, deviceSettingsStore)
+    val cloudSyncController = CloudSyncController(
+        cloudPuller,
+        remoteStore,
+        deviceSettingsStore,
+        businessRepository,
+        database.syncOutboxDao(),
+    )
 
     /** Registered providers. New providers plug in here without touching accounting code. */
     val providerRegistry = ProviderRegistry(providers = listOf(AirtelMoneyProvider()))
 
-    val smsIngestionPipeline = SmsIngestionPipeline(providerRegistry, rawSmsRepository, transactionRepository)
+    val smsIngestionPipeline = SmsIngestionPipeline(
+        providerRegistry,
+        rawSmsRepository,
+        transactionRepository,
+        DiscrepancyDetector(transactionRepository),
+    )
     val attributionService = AttributionService(shiftRepository)
     val reconciliationService = ReconciliationService(
         shiftRepository,

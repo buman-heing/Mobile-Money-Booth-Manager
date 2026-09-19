@@ -35,8 +35,8 @@ fun RoleChoiceScreen(onChosen: (DeviceRole) -> Unit) {
         subtitle = "You can change this later in Settings.",
     ) {
         RoleCard(
-            title = "Booth phone",
-            body = "This phone holds the Airtel Money SIM at the booth. It records every transaction SMS automatically.",
+            title = "Employee phone",
+            body = "The phone with the Airtel Money SIM at the booth. It records every transaction SMS automatically.",
             icon = Icons.Rounded.Storefront,
             tint = MaterialTheme.colorScheme.primary,
             onClick = { onChosen(DeviceRole.BOOTH) },
@@ -44,7 +44,7 @@ fun RoleChoiceScreen(onChosen: (DeviceRole) -> Unit) {
         Spacer(Modifier.height(12.dp))
         RoleCard(
             title = "Owner phone",
-            body = "Follow one or more booths from anywhere. Enter the share code shown on the booth phone.",
+            body = "Follow the business from anywhere. Enter the share code shown on the employee phone.",
             icon = Icons.Rounded.Visibility,
             tint = Magenta,
             onClick = { onChosen(DeviceRole.OWNER) },

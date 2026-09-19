@@ -62,6 +62,15 @@ class FirestoreRemoteStore(
         }
     }
 
+    /** "This phone is alive": lets the owner tell a quiet day from a dead employee phone. */
+    suspend fun heartbeat(businessUid: String, deviceId: String, fields: Map<String, Any?>) {
+        runCatching {
+            auth.ensureSignedIn()
+            firestore.collection("businesses").document(businessUid).collection("devices").document(deviceId)
+                .set(fields + ("lastSeenAt" to FieldValue.serverTimestamp()), SetOptions.merge()).await()
+        }
+    }
+
     suspend fun lookupJoinCode(code: String): String? {
         auth.ensureSignedIn()
         val snap = firestore.collection("joinCodes").document(code).get().await()

@@ -136,8 +136,17 @@ class AirtelParserRegressionTest {
     }
 
     @Test
-    fun `balance check response is not a transaction`() {
-        assertEquals(ParserOutcome.NoMatch, parse("Your Current Balance is ZMW 6.32"))
+    fun `balance enquiry reply records the balance but moves no money`() {
+        val outcome = parse("Your Current Balance is ZMW 6.32")
+        assertTrue(outcome is ParserOutcome.Matched)
+        val result = (outcome as ParserOutcome.Matched).result
+
+        assertEquals(TransactionType.BALANCE_CHECK, result.transactionType)
+        assertEquals(TransactionDirection.UNKNOWN, result.direction)
+        assertNull(result.amountMinor)
+        assertEquals(632L, result.balanceAfterMinor)
+        assertNull(result.commissionMinor)
+        assertTrue(result.externalTransactionId!!.startsWith("BAL"))
     }
 
     @Test

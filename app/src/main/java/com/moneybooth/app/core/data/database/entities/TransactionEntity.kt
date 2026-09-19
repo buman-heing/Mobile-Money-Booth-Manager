@@ -53,6 +53,8 @@ data class TransactionEntity(
     val serviceName: String? = null,
     val balanceBeforeMinor: Long? = null,
     val balanceAfterMinor: Long? = null,
+    /** Reported balance minus what the ledger expected; non-zero means activity this phone never saw. */
+    val discrepancyMinor: Long? = null,
     val transactionTimestamp: Long? = null,
     val smsReceivedTimestamp: Long,
     val employeeId: Long? = null,

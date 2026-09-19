@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.moneybooth.app.core.data.AppContainer
 import com.moneybooth.app.ui.auth.PinViewModel
-import com.moneybooth.app.ui.booths.BoothViewModel
 import com.moneybooth.app.ui.dashboard.DashboardViewModel
 import com.moneybooth.app.ui.devtools.DevSmsParserViewModel
 import com.moneybooth.app.ui.employees.EmployeeViewModel
@@ -26,8 +25,7 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
         val viewModel: ViewModel = when (modelClass) {
             PinViewModel::class.java -> PinViewModel(container.pinCredentialStore, container.sessionManager)
             OnboardingViewModel::class.java -> OnboardingViewModel(container.businessRepository, container.boothRepository)
-            BoothViewModel::class.java -> BoothViewModel(container.boothRepository)
-            EmployeeViewModel::class.java -> EmployeeViewModel(container.employeeRepository, container.boothRepository)
+            EmployeeViewModel::class.java -> EmployeeViewModel(container.employeeRepository)
             TransactionsViewModel::class.java ->
                 TransactionsViewModel(container.transactionRepository, container.boothRepository)
             TransactionDetailViewModel::class.java -> TransactionDetailViewModel(
@@ -35,7 +33,12 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
                 container.rawSmsRepository,
                 container.auditLogRepository,
             )
-            DashboardViewModel::class.java -> DashboardViewModel(container.transactionRepository)
+            DashboardViewModel::class.java -> DashboardViewModel(
+                container.transactionRepository,
+                container.shiftRepository,
+                container.employeeRepository,
+                container.boothRepository,
+            )
             DevSmsParserViewModel::class.java ->
                 DevSmsParserViewModel(container.providerRegistry, container.smsIngestionPipeline)
             UnknownSmsReviewViewModel::class.java -> UnknownSmsReviewViewModel(
@@ -52,7 +55,7 @@ class AppViewModelFactory(private val container: AppContainer) : ViewModelProvid
                 container.boothRepository,
             )
             ReconciliationViewModel::class.java -> ReconciliationViewModel(container.reconciliationRepository)
-            SettingsViewModel::class.java -> SettingsViewModel(container.boothRepository, container.smsPermissionManager)
+            SettingsViewModel::class.java -> SettingsViewModel(container.smsPermissionManager)
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
         return viewModel as T

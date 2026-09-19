@@ -36,6 +36,8 @@ sealed interface ApplyResult {
  * repositories) so applying a record never re-queues it for upload.
  */
 class RemoteApplier(private val db: AppDatabase) {
+    /** Fires once per flagged transaction the first time this phone learns of it. */
+    var onDiscrepancyArrived: ((TransactionEntity) -> Unit)? = null
 
     suspend fun apply(type: SyncEntityType, uid: String, f: Map<String, Any?>): ApplyResult {
         return when (type) {
@@ -180,6 +182,7 @@ class RemoteApplier(private val db: AppDatabase) {
                 serviceName = f.str("serviceName"),
                 balanceBeforeMinor = f.lng("balanceBeforeMinor"),
                 balanceAfterMinor = f.lng("balanceAfterMinor"),
+                discrepancyMinor = f.lng("discrepancyMinor"),
                 transactionTimestamp = f.lng("transactionTimestamp"),
                 smsReceivedTimestamp = f.lng("smsReceivedTimestamp") ?: 0L,
                 employeeId = f.str("employeeUid")?.let { db.employeeDao().getByUid(it)?.id },
@@ -194,6 +197,9 @@ class RemoteApplier(private val db: AppDatabase) {
                 updatedAt = f.lng("updatedAt") ?: 0L,
             )
             if (existing == null) db.transactionDao().insert(entity) else db.transactionDao().update(entity)
+            val flagged = (entity.discrepancyMinor ?: 0L) != 0L
+            val alreadyKnown = (existing?.discrepancyMinor ?: 0L) != 0L
+            if (flagged && !alreadyKnown) onDiscrepancyArrived?.invoke(entity)
             ApplyResult.Applied
         }
 

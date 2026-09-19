@@ -11,10 +11,11 @@ class OnboardingViewModel(
     private val boothRepository: BoothRepository,
 ) : ViewModel() {
 
-    fun createBusinessAndFirstBooth(businessName: String, boothName: String, onDone: () -> Unit) {
+    /** One business, one invisible booth of the same name: the user never manages booths. */
+    fun createBusiness(businessName: String, onDone: () -> Unit) {
         viewModelScope.launch {
             val businessId = businessRepository.createBusiness(businessName)
-            boothRepository.createBooth(businessId, boothName)
+            boothRepository.createBooth(businessId, businessName)
             onDone()
         }
     }

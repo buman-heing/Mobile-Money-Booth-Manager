@@ -21,6 +21,7 @@ class AirtelMoneyProvider : MobileMoneyProvider {
         TransactionType.AIRTIME_TOPUP,
         TransactionType.TILL_PAYMENT,
         TransactionType.LOAN_REPAYMENT,
+        TransactionType.BALANCE_CHECK,
     )
 
     override fun validate(result: ParsedTransactionResult): ValidationResult {

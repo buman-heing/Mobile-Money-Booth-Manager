@@ -15,7 +15,9 @@ class SyncWorker(
 
     override suspend fun doWork(): Result {
         val settings = container.deviceSettingsStore
-        return when (val result = container.syncEngine.runOnce()) {
+        val result = container.syncEngine.runOnce()
+        if (result != SyncRunResult.CloudNotConfigured) container.cloudSyncController.sendHeartbeat()
+        return when (result) {
             is SyncRunResult.Uploaded -> {
                 settings.lastSyncAt = System.currentTimeMillis()
                 settings.lastSyncError = null

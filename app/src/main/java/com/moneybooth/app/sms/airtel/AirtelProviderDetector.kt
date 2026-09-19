@@ -15,6 +15,7 @@ class AirtelProviderDetector : ProviderDetector {
         val senderMatches = input.sender.contains("airtel", ignoreCase = true)
         val bodyMatches = input.body.contains("airtel money", ignoreCase = true) ||
             input.body.contains("txn id", ignoreCase = true) ||
+            input.body.contains("current balance is zmw", ignoreCase = true) ||
             tidPattern.containsMatchIn(input.body)
         return senderMatches || bodyMatches
     }

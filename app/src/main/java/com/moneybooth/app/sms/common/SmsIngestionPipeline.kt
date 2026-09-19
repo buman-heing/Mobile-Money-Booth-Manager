@@ -2,6 +2,7 @@ package com.moneybooth.app.sms.common
 
 import com.moneybooth.app.core.data.repository.RawSmsRepository
 import com.moneybooth.app.core.data.repository.TransactionRepository
+import com.moneybooth.app.core.domain.accounting.DiscrepancyDetector
 import com.moneybooth.app.core.domain.transactions.IdempotencyKeyGenerator
 import com.moneybooth.app.core.domain.transactions.ParserOutcome
 import com.moneybooth.app.core.domain.transactions.RawSmsInput
@@ -25,6 +26,7 @@ class SmsIngestionPipeline(
     private val providerRegistry: ProviderRegistry,
     private val rawSmsRepository: RawSmsRepository,
     private val transactionRepository: TransactionRepository,
+    private val discrepancyDetector: DiscrepancyDetector,
 ) {
     suspend fun ingest(
         input: RawSmsInput,
@@ -70,6 +72,7 @@ class SmsIngestionPipeline(
                         shiftId = shiftId,
                         employeeId = employeeId,
                         parserVersion = PARSER_VERSION,
+                        discrepancyMinor = discrepancyDetector.detect(outcome.result, input.receivedTimestamp),
                     )
                     rawSmsRepository.markParsed(
                         rawSmsId,

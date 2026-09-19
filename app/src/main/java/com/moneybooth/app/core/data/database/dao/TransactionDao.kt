@@ -75,6 +75,7 @@ interface TransactionDao {
         WHERE (:boothId IS NULL OR boothId = :boothId)
           AND smsReceivedTimestamp BETWEEN :startTime AND :endTime
           AND status IN ('PARSED', 'CONFIRMED')
+          AND transactionType != 'BALANCE_CHECK'
         """,
     )
     fun observeCountForDay(boothId: Long?, startTime: Long, endTime: Long): Flow<Int>
@@ -89,6 +90,18 @@ interface TransactionDao {
         """,
     )
     fun observeSumForDay(boothId: Long?, direction: TransactionDirection, startTime: Long, endTime: Long): Flow<Long>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM transactions
+        WHERE (:boothId IS NULL OR boothId = :boothId)
+          AND direction = :direction
+          AND smsReceivedTimestamp BETWEEN :startTime AND :endTime
+          AND status IN ('PARSED', 'CONFIRMED')
+          AND transactionType != 'BALANCE_CHECK'
+        """,
+    )
+    fun observeCountForDayByDirection(boothId: Long?, direction: TransactionDirection, startTime: Long, endTime: Long): Flow<Int>
 
     @Query(
         """
@@ -114,4 +127,27 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE uid = :uid LIMIT 1")
     suspend fun getByUid(uid: String): TransactionEntity?
+
+    @Query(
+        """
+        SELECT * FROM transactions
+        WHERE balanceAfterMinor IS NOT NULL
+          AND smsReceivedTimestamp < :beforeTimestamp
+          AND status IN ('PARSED', 'CONFIRMED')
+        ORDER BY smsReceivedTimestamp DESC, id DESC
+        LIMIT 1
+        """,
+    )
+    suspend fun getLatestWithBalanceBefore(beforeTimestamp: Long): TransactionEntity?
+
+    @Query(
+        """
+        SELECT * FROM transactions
+        WHERE balanceAfterMinor IS NULL
+          AND smsReceivedTimestamp > :afterTimestamp AND smsReceivedTimestamp < :beforeTimestamp
+          AND status IN ('PARSED', 'CONFIRMED')
+        ORDER BY smsReceivedTimestamp
+        """,
+    )
+    suspend fun getWithoutBalanceBetween(afterTimestamp: Long, beforeTimestamp: Long): List<TransactionEntity>
 }

@@ -15,6 +15,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 
+data class DeviceStatus(
+    val deviceId: String,
+    val role: String,
+    val lastSeenAt: Long?,
+    val smsCaptureEnabled: Boolean,
+    val pendingUploads: Int,
+)
+
 /**
  * Brings cloud records down into this phone. Two modes share one apply path:
  *  - [pullOnce]: catch up on everything since the last cursor (used by the background worker
@@ -60,6 +68,23 @@ class CloudPuller(
             }
         }
     }
+
+    fun listenDevices(businessUid: String, onChange: (List<DeviceStatus>) -> Unit): ListenerRegistration =
+        firestore.collection("businesses").document(businessUid).collection("devices")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot == null) return@addSnapshotListener
+                onChange(
+                    snapshot.documents.map { doc ->
+                        DeviceStatus(
+                            deviceId = doc.id,
+                            role = doc.getString("role") ?: "",
+                            lastSeenAt = doc.getTimestamp("lastSeenAt")?.toDate()?.time,
+                            smsCaptureEnabled = doc.getBoolean("smsCaptureEnabled") ?: false,
+                            pendingUploads = doc.getLong("pendingUploads")?.toInt() ?: 0,
+                        )
+                    },
+                )
+            }
 
     private fun baseQuery(businessUid: String, type: SyncEntityType, afterMillis: Long): Query =
         firestore.collection("businesses").document(businessUid).collection(type.collection)

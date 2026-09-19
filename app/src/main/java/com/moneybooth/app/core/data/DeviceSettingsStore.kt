@@ -65,6 +65,12 @@ class DeviceSettingsStore(context: Context) {
             _syncStatusFlow.value = syncStatus()
         }
 
+    /** Stable id for this installation, so the owner can tell one employee phone from another. */
+    val deviceId: String
+        get() = prefs.getString(KEY_DEVICE_ID, null) ?: java.util.UUID.randomUUID().toString().also {
+            prefs.edit().putString(KEY_DEVICE_ID, it).apply()
+        }
+
     /** The business this phone follows in the cloud (set when an owner phone joins with a code). */
     var cloudBusinessUid: String?
         get() = prefs.getString(KEY_CLOUD_BUSINESS_UID, null)
@@ -93,6 +99,7 @@ class DeviceSettingsStore(context: Context) {
         private const val KEY_LAST_SYNC_ERROR = "last_sync_error"
         private const val KEY_LAST_PULL_AT = "last_pull_at"
         private const val KEY_CLOUD_BUSINESS_UID = "cloud_business_uid"
+        private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_PULL_CURSOR_PREFIX = "pull_cursor_"
     }
 }

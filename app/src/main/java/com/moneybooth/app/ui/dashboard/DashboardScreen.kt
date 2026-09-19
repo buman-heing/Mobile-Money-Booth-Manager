@@ -1,5 +1,13 @@
 package com.moneybooth.app.ui.dashboard
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,17 +47,26 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material.icons.rounded.PhonelinkOff
+import androidx.compose.material.icons.rounded.PhonelinkRing
 import com.moneybooth.app.core.data.AppContainer
+import com.moneybooth.app.core.data.DeviceRole
 import com.moneybooth.app.core.data.database.entities.TransactionEntity
 import com.moneybooth.app.core.domain.accounting.Money
+import com.moneybooth.app.core.domain.transactions.TransactionDirection
 import com.moneybooth.app.ui.common.AmountText
 import com.moneybooth.app.ui.common.AppViewModelFactory
 import com.moneybooth.app.ui.common.BrandMark
+import com.moneybooth.app.ui.common.SectionCard
+import com.moneybooth.app.ui.common.StatusLine
 import com.moneybooth.app.ui.common.TransactionIcon
+import com.moneybooth.app.ui.common.UnusualTransactionsCard
 import com.moneybooth.app.ui.common.displayLabel
+import com.moneybooth.app.ui.common.relativeTime
 import com.moneybooth.app.ui.theme.BrandGradient
 import com.moneybooth.app.ui.theme.MoneyIn
 import com.moneybooth.app.ui.theme.MoneyOut
+import com.moneybooth.app.ui.theme.WarningAmber
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -63,12 +80,26 @@ fun DashboardScreen(
     onSeeAllTransactions: () -> Unit,
 ) {
     val viewModel: DashboardViewModel = viewModel(factory = AppViewModelFactory(container))
-    val count by viewModel.observeTodayCount(null).collectAsStateWithLifecycle(initialValue = 0)
-    val moneyIn by viewModel.observeTodayMoneyIn(null).collectAsStateWithLifecycle(initialValue = 0L)
-    val moneyOut by viewModel.observeTodayMoneyOut(null).collectAsStateWithLifecycle(initialValue = 0L)
-    val commission by viewModel.observeTodayCommission(null).collectAsStateWithLifecycle(initialValue = 0L)
-    val balance by viewModel.observeMobileMoneyBalance(null).collectAsStateWithLifecycle(initialValue = null)
+    val count by viewModel.observeTodayCount().collectAsStateWithLifecycle(initialValue = 0)
+    val moneyIn by viewModel.observeTodaySum(TransactionDirection.IN).collectAsStateWithLifecycle(initialValue = 0L)
+    val moneyOut by viewModel.observeTodaySum(TransactionDirection.OUT).collectAsStateWithLifecycle(initialValue = 0L)
+    val commission by viewModel.observeTodayCommission().collectAsStateWithLifecycle(initialValue = 0L)
+    val balance by viewModel.observeMobileMoneyBalance().collectAsStateWithLifecycle(initialValue = null)
     val recent by viewModel.observeRecent().collectAsStateWithLifecycle(initialValue = emptyList())
+    val unusual by viewModel.observeUnusual().collectAsStateWithLifecycle(initialValue = emptyList())
+    val devices by container.cloudSyncController.devices.collectAsStateWithLifecycle()
+    val employeePhone = devices.filter { it.role == DeviceRole.BOOTH.name }.maxByOrNull { it.lastSeenAt ?: 0L }
+
+    // Owners get a notification for unusual transactions; Android 13+ needs to be asked once.
+    val context = LocalContext.current
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
@@ -89,6 +120,34 @@ fun DashboardScreen(
 
         Spacer(Modifier.height(20.dp))
         BalanceHero(balance = balance, commission = commission, count = count)
+
+        if (unusual.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            UnusualTransactionsCard(unusual, onTransactionClick)
+        }
+
+        Spacer(Modifier.height(12.dp))
+        SectionCard {
+            val seen = employeePhone?.lastSeenAt
+            val stale = seen == null || System.currentTimeMillis() - seen > 6 * 60 * 60 * 1000
+            StatusLine(
+                icon = if (stale) Icons.Rounded.PhonelinkOff else Icons.Rounded.PhonelinkRing,
+                tint = if (stale) WarningAmber else MoneyIn,
+                title = when {
+                    employeePhone == null -> "No employee phone connected yet"
+                    stale -> "Employee phone hasn't checked in"
+                    else -> "Employee phone is online"
+                },
+                detail = when {
+                    employeePhone == null -> "Set up the booth phone and it will appear here."
+                    else -> listOfNotNull(
+                        seen?.let { "Last seen ${relativeTime(it)}" },
+                        if (!employeePhone.smsCaptureEnabled) "SMS recording is OFF" else null,
+                        if (employeePhone.pendingUploads > 0) "${employeePhone.pendingUploads} waiting to upload" else null,
+                    ).joinToString(" · ")
+                },
+            )
+        }
 
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

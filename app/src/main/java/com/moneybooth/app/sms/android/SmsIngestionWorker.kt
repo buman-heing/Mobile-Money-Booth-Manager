@@ -19,7 +19,7 @@ class SmsIngestionWorker(
         val body = inputData.getString(KEY_BODY) ?: return Result.failure()
         val timestamp = inputData.getLong(KEY_TIMESTAMP, System.currentTimeMillis())
 
-        val boothId = container.deviceSettingsStore.activeBoothId
+        val boothId = container.deviceSettingsStore.activeBoothId ?: container.boothRepository.getDefaultOnce()?.id
         val attribution = boothId?.let { container.attributionService.currentAttribution(it) }
 
         container.smsIngestionPipeline.ingest(
